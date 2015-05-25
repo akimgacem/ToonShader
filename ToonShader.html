@@ -1,0 +1,286 @@
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+<title>Toon Shading</title>
+<meta charset="utf-8">
+</head>
+<body>
+<script src="build/three.js"></script>
+<script src="js/OBJLoader.js"></script>
+<script src="js/controls/TrackballControls.js"></script>
+<script src='js/Detector.js'></script>
+<script src="js/libs/dat.gui.min.js"></script>
+<script>
+			THREE.ShaderTypes = {
+
+			'phongDiffuse' : {
+
+				uniforms: {
+
+					"uDirLightPos":	{ type: "v3", value: new THREE.Vector3() },
+					"uDirLightColor": { type: "c", value: new THREE.Color( 0x660066 ) },
+
+					"uMaterialColor":  { type: "c", value: new THREE.Color( 0x00000 ) },
+
+					uKd: {
+						type: "f",
+						value: 0.7
+					},
+					uBorder: {
+						type: "f",
+						value: 0.4
+					}
+				},
+
+				vertexShader: [
+
+					"varying vec3 vNormal;",
+					"varying vec3 vViewPosition;",
+
+					"void main() {",
+
+						"gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );",
+						"vNormal = normalize( normalMatrix * normal );",
+						"vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );",
+						"vViewPosition = -mvPosition.xyz;",
+
+					"}"
+
+				].join("\n"),
+
+				fragmentShader: [
+
+					"uniform vec3 uMaterialColor;",
+
+					"uniform vec3 uDirLightPos;",
+					"uniform vec3 uDirLightColor;",
+
+					"uniform float uKd;",
+					"uniform float uBorder;",
+
+					"varying vec3 vNormal;",
+					"varying vec3 vViewPosition;",
+
+					"void main() {",
+						"vec4 lDirection = viewMatrix * vec4( uDirLightPos, 0.0 );",
+						"vec3 lVector = normalize( lDirection.xyz );",
+
+						"vec3 normal = normalize( vNormal );",
+						
+						"float diffuse = dot( normal, lVector );",
+						"if (diffuse > 0.8){diffuse = 1.0;}",
+						"else if(diffuse > 0.4){diffuse = 0.8;}",
+						"else if(diffuse > 0.0){diffuse = 0.6;}",
+						"else if(diffuse > -0.3){diffuse = 0.4;}",
+						"else{diffuse = 0.2;}",
+
+						"gl_FragColor = vec4( uKd * uMaterialColor * uDirLightColor * diffuse, 1.0 );",
+
+					"}"
+
+				].join("\n")
+
+			}
+
+			};
+
+			if (!Detector.webgl) { Detector.addGetWebGLMessage(); }
+
+			var SCREEN_WIDTH = window.innerWidth;
+			var SCREEN_HEIGHT = window.innerHeight;
+
+			var container, camera, scene, renderer;
+			var cameraControls;
+			var effectController;
+			var clock = new THREE.Clock();
+
+			var ambientLight, light;
+			var model;
+			var phongMaterial;
+
+			init();
+			animate();
+
+			function init() {
+
+				container = document.createElement('div');
+				document.body.appendChild(container);
+
+				camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 80000);
+				camera.position.z = 500;
+
+				scene = new THREE.Scene();
+				scene.add(camera);
+
+				ambientLight = new THREE.AmbientLight(0x333333); 
+				scene.add(ambientLight);
+
+				light = new THREE.DirectionalLight(0xffffff, 1.0);
+				light.position.set(320, 390, 700);
+
+				scene.add(light);
+
+				renderer = new THREE.WebGLRenderer({ antialias: true });
+				renderer.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);
+				renderer.setClearColor(0xffffff, 1);
+
+				container.appendChild(renderer.domElement);
+
+				renderer.gammaInput = true;
+				renderer.gammaOutput = true;
+
+				window.addEventListener('resize', onWindowResize, false);
+
+				cameraControls = new THREE.TrackballControls(camera, renderer.domElement);
+				cameraControls.target.set(0, 0, 0);
+				cameraControls.rotateSpeed = 5.0;
+				cameraControls.zoomSpeed = 5;
+				cameraControls.panSpeed = 2;
+				cameraControls.noZoom = false;
+				cameraControls.noPan = false;
+				cameraControls.staticMoving = true;
+				cameraControls.dynamicDampingFactor = 0.3;
+
+				var materialColor = new THREE.Color();
+				materialColor.setRGB(0.6, 0.6, 0.6);
+
+				phongMaterial = createShaderMaterial("phongDiffuse", light);
+				phongMaterial.uniforms.uMaterialColor.value.copy(materialColor);
+				phongMaterial.side = THREE.DoubleSide;
+
+				model = new THREE.Mesh(new THREE.TorusGeometry(100, 46), phongMaterial);
+				model.position.x = -200;			
+				scene.add(model);	
+
+				var model2 = new THREE.Mesh(new THREE.TorusKnotGeometry(100, 30, 100, 160), phongMaterial);
+				model2.position.x = 200;	
+
+				// instantiate a loader
+				//var loader = new THREE.JSONLoader();
+
+				// load a resource
+				//loader.load('models/teddy.json',function (geom) {
+				//		teapot = new THREE.Mesh(geom, phongMaterial);
+				//		scene.add(geom);
+				//	}
+				//);
+
+				//teapot.overdraw = true;
+				//teapot = new THREE.Mesh(
+					//new THREE.TeapotGeometry(teapotSize, 20, true, true, true, true), phongMaterial);		
+
+				scene.add(model2);	
+				setupGui();
+			}
+
+			function createShaderMaterial(id, light) {
+
+				var shader = THREE.ShaderTypes[id];
+
+				var u = THREE.UniformsUtils.clone(shader.uniforms);
+
+				var vs = shader.vertexShader;
+				var fs = shader.fragmentShader;
+
+				var material = new THREE.ShaderMaterial({ uniforms: u, vertexShader: vs, fragmentShader: fs });
+
+				material.uniforms.uDirLightPos.value = light.position;
+				material.uniforms.uDirLightColor.value = light.color;
+
+				return material;
+
+			}
+
+			function onWindowResize() {
+
+				SCREEN_WIDTH = window.innerWidth;
+				SCREEN_HEIGHT = window.innerHeight;
+
+				renderer.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);
+
+				camera.aspect = SCREEN_WIDTH / SCREEN_HEIGHT;
+				camera.updateProjectionMatrix();
+
+			}
+
+			function setupGui() {
+
+				effectController = {
+
+					kd: 0.7,
+					border: 0.4,
+
+					hue: 0.09,
+					saturation: 0.46,
+					value: 0.8,
+
+					lhue: 0.04,
+					lsaturation: 0.0,
+					lvalue: 0.8,
+
+					lx: 0.32,
+					ly: 0.39,
+					lz: 0.7,
+
+					dummy: function () {
+					}
+
+				};
+
+				var h;
+
+				var gui = new dat.GUI();
+
+				h = gui.addFolder("Control de material");
+				h.add(effectController, "kd", 0.0, 1.0, 0.025).name("Reflectancia");
+				h.add(effectController, "border", -1.0, 1.0, 0.025).name("Bordes");
+
+				h = gui.addFolder("Color del Material");
+				h.add(effectController, "hue", 0.0, 1.0, 0.025).name("Tono");
+				h.add(effectController, "saturation", 0.0, 1.0, 0.025).name("Saturación");
+				h.add(effectController, "value", 0.0, 1.0, 0.025).name("Valor");
+		
+				h = gui.addFolder("Color de la luz");
+				h.add(effectController, "lhue", 0.0, 1.0, 0.025).name("Tono");
+				h.add(effectController, "lsaturation", 0.0, 1.0, 0.025).name("Saturación");
+				h.add(effectController, "lvalue", 0.0, 1.0, 0.025).name("Valor");
+
+				h = gui.addFolder("Dirección de la luz");
+				h.add(effectController, "lx", -1.0, 1.0, 0.025).name("X");
+				h.add(effectController, "ly", -1.0, 1.0, 0.025).name("Y");
+				h.add(effectController, "lz", -1.0, 1.0, 0.025).name("Z");
+
+			}
+
+			function animate() {
+
+				requestAnimationFrame(animate);
+				render();
+
+			}
+
+			function render() {
+
+				var delta = clock.getDelta();
+
+				cameraControls.update(delta);
+
+				phongMaterial.uniforms.uKd.value = effectController.kd;
+				phongMaterial.uniforms.uBorder.value = effectController.border;
+
+				var materialColor = new THREE.Color();
+				materialColor.setHSL(effectController.hue, effectController.saturation, effectController.value);
+				phongMaterial.uniforms.uMaterialColor.value.copy(materialColor);
+
+				light.position.set(effectController.lx, effectController.ly, effectController.lz);
+				light.position.normalize();
+
+				light.color.setHSL(effectController.lhue, effectController.lsaturation, effectController.lvalue);
+
+				renderer.render(scene, camera);
+
+			}
+
+		</script>
+</body>
+</html>
