@@ -121,6 +121,7 @@
 			var ambientLight, light;
 			var model;
 			var phongMaterial;
+			var borderMaterial;
 
 			var composer;
 
@@ -196,16 +197,15 @@
 				var vs = shader.vertexShader;
 				var fs = shader.fragmentShader;
 
-				var material = new THREE.ShaderMaterial({ uniforms: u, vertexShader: vs, fragmentShader: fs });
+				borderMaterial = new THREE.ShaderMaterial({ uniforms: u, vertexShader: vs, fragmentShader: fs });
 
-				var mesh3 = new THREE.Mesh(geometry1,material);
+				var mesh3 = new THREE.Mesh(geometry1,borderMaterial);
 				mesh3.position.x = -200;	
 				mesh3.material.depthWrite = false;
 				mesh3.quaternion = model.quaternion;
 				outScene.add(mesh3);
 
-
-				var mesh4 = new THREE.Mesh(geometry2,material);
+				var mesh4 = new THREE.Mesh(geometry2,borderMaterial);
 				mesh4.position.x = 200;	
 				mesh4.material.depthWrite = false;
 				mesh4.quaternion = model2.quaternion;
@@ -262,7 +262,7 @@
 				effectController = {
 
 					kd: 0.7,
-					border: 0.4,
+					border: 2.0,
 
 					hue: 0.09,
 					saturation: 0.46,
@@ -287,7 +287,7 @@
 
 				h = gui.addFolder("Control de material");
 				h.add(effectController, "kd", 0.0, 1.0, 0.025).name("Reflectancia");
-				h.add(effectController, "border", -1.0, 1.0, 0.025).name("Bordes");
+				h.add(effectController, "border", 0.0, 10.0, 0.5).name("Bordes");
 
 				h = gui.addFolder("Color del Material");
 				h.add(effectController, "hue", 0.0, 1.0, 0.025).name("Tono");
@@ -331,10 +331,11 @@
 
 				light.color.setHSL(effectController.lhue, effectController.lsaturation, effectController.lvalue);
 
+				borderMaterial.uniforms.offset.value = effectController.border;
+
 				renderer.clear();
 				renderer.render(outScene, camera);
 				renderer.render(scene, camera);
-
 
 			}
 
