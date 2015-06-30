@@ -218,18 +218,18 @@
 
 			function setModel(){
 					var materialColor = new THREE.Color();
-				materialColor.setRGB(0.6, 0.6, 0.6);
+					materialColor.setRGB(0.6, 0.6, 0.6);
 
 				var geometry1 = new THREE.TorusGeometry(100, 46);
 				var geometry2 = new THREE.TorusKnotGeometry(100, 30, 100, 160);
 
 				phongMaterial = createShaderMaterial("phongDiffuse", light);
 				phongMaterial.uniforms.uMaterialColor.value.copy(materialColor);
-				phongMaterial.side = THREE.DoubleSide;
+				phongMaterial.side = THREE.DoubleSide;			
 
 				model = new THREE.Mesh(geometry1, phongMaterial);
-				model.position.x = -200;			
-				scene.add(model);	
+				model.position.x = -200;
+				scene.add(model);
 
 				var model2 = new THREE.Mesh(geometry2, phongMaterial);
 				model2.position.x = 200;
