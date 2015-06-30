@@ -29,7 +29,12 @@
 					uBorder: {
 						type: "f",
 						value: 0.4
+					},
+					number: {
+						type: "f",
+						value: 4.0
 					}
+
 				},
 
 				vertexShader: [
@@ -57,6 +62,7 @@
 
 					"uniform float uKd;",
 					"uniform float uBorder;",
+					"uniform float number;",
 
 					"varying vec3 vNormal;",
 					"varying vec3 vViewPosition;",
@@ -68,11 +74,51 @@
 						"vec3 normal = normalize( vNormal );",
 						
 						"float diffuse = dot( normal, lVector );",
-						"if (diffuse > 0.8){diffuse = 1.0;}",
-						"else if(diffuse > 0.4){diffuse = 0.8;}",
-						"else if(diffuse > 0.0){diffuse = 0.6;}",
-						"else if(diffuse > -0.3){diffuse = 0.4;}",
-						"else{diffuse = 0.2;}",
+						
+						"if(number<=1.0){",
+							"if (diffuse > 0.5){diffuse = 1.0;}",
+							"else{diffuse = 0.2;}",
+						"}",
+
+						"if(2.0>number && number>1.0){",
+							"if (diffuse > 0.66){diffuse = 1.0;}",
+							"else if(diffuse > 0.33){diffuse = 0.6;}",
+							"else{diffuse = 0.2;}",
+						"}",
+
+						"if(3.0>number && number>2.0){",
+							"if (diffuse > 0.75){diffuse = 1.0;}",
+							"else if(diffuse > 0.5){diffuse = 0.8;}",
+							"else if(diffuse > 0.25){diffuse = 0.6;}",
+							"else {diffuse = 0.2;}",
+						"}",
+
+						"if(4.0>number && number>3.0 || number<0.0){",	
+							"if (diffuse > 0.8){diffuse = 1.0;}",
+							"else if(diffuse > 0.5){diffuse = 0.8;}",
+							"else if(diffuse > 0.1){diffuse = 0.6;}",
+							"else if(diffuse > -0.2){diffuse = 0.4;}",
+							"else{diffuse = 0.2;}",
+						"}",
+
+						"if(5.0>number && number>4.0){",
+							"if (diffuse > 0.8){diffuse = 1.0;}",
+							"else if(diffuse > 0.55){diffuse = 0.85;}",
+							"else if(diffuse > 0.3){diffuse = 0.7;}",
+							"else if(diffuse > -0.05){diffuse = 0.55;}",
+							"else if(diffuse > -0.3){diffuse = 0.4;}",
+							"else{diffuse = 0.25;}",
+						"}",
+
+						"if(number>5.0){",		
+							"if (diffuse > 0.8){diffuse = 1.0;}",
+							"else if(diffuse > 0.6){diffuse = 0.9;}",
+							"else if(diffuse > 0.4){diffuse = 0.8;}",
+							"else if(diffuse > 0.2){diffuse = 0.65;}",
+							"else if(diffuse > 0.0){diffuse = 0.5;}",
+							"else if(diffuse > -0.2){diffuse = 0.35;}",
+							"else{diffuse = 0.2;}",
+						"}",
 
 						"gl_FragColor = vec4( uKd * uMaterialColor * uDirLightColor * diffuse, 1.0 );",
 
@@ -263,6 +309,7 @@
 
 					kd: 0.7,
 					border: 2.0,
+					steps: -1,
 
 					hue: 0.09,
 					saturation: 0.46,
@@ -288,6 +335,7 @@
 				h = gui.addFolder("Control de material");
 				h.add(effectController, "kd", 0.0, 1.0, 0.025).name("Reflectancia");
 				h.add(effectController, "border", 0.0, 10.0, 0.5).name("Bordes");
+				h.add(effectController,"steps",1,6,1).name("Divisiones");
 
 				h = gui.addFolder("Color del Material");
 				h.add(effectController, "hue", 0.0, 1.0, 0.025).name("Tono");
@@ -321,6 +369,7 @@
 
 				phongMaterial.uniforms.uKd.value = effectController.kd;
 				phongMaterial.uniforms.uBorder.value = effectController.border;
+				phongMaterial.uniforms.number.value = effectController.steps;
 
 				var materialColor = new THREE.Color();
 				materialColor.setHSL(effectController.hue, effectController.saturation, effectController.value);
